@@ -4,7 +4,7 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 import re
-from datetime import datetime, timedelta
+
 from dateutil.parser import parse
 
 all_data = input("Do you want all available dates? enter yes or no:\n")
