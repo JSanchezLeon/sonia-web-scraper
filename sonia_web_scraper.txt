@@ -1,0 +1,54 @@
+import pandas as pd
+import requests
+from bs4 import BeautifulSoup
+import re
+from datetime import datetime, timedelta
+from dateutil.parser import parse
+
+url = "http://www.bankofengland.co.uk/boeapps/iadb/fromshowcolumns.asp?Travel=NIxIRxSUx&FromSeries=1&ToSeries=50&DAT=ALL&VFD=N&html.x=20&html.y=22&CSVF=TT&C=5JK&Filter=N"
+
+page = requests.get(url)
+
+soup = BeautifulSoup(page.content, 'html.parser')
+
+boe_text = []
+for text in soup.find_all('td'):
+    text_string = text.get_text().replace("\t","")
+    text_string = text_string.replace("\n","")
+    text_string = text_string.replace("\r","")
+    boe_text.append(text_string)
+
+body = boe_text[10:]
+
+sonia_data = {"Date": [],
+             "SONIA": []}
+for i in body:
+    try:
+        sonia_data["SONIA"].append(round(float(i)/100, 6))
+    except ValueError:
+        i = parse(i).strftime('%m/%d/%Y')
+        sonia_data["Date"].append(i)
+
+print("the last date with SONIA is {}".format(sonia_data["Date"][-1]))
+year = input("please enter the relevant year\n")
+month = input("please enter the relevant month(e.g. March = 03)\n")
+
+next_five_bd = input("please enter the next 620 relevant business days up to the ipd separated by a coma\n")
+
+next_five_bd = next_five_bd.split(",")
+next_five_dates = [month + "/" + day + "/" + year for day in next_five_bd]
+
+for date in next_five_dates:
+    sonia_data['Date'].append(date)
+    sonia_data['SONIA'].append(None)    
+
+
+df = pd.DataFrame(sonia_data)
+
+df.index = df['Date']
+
+df.drop('Date',axis = 1,inplace = True)
+
+df = df[::-1]
+
+df.to_csv('SONIA.csv', sep=',')
